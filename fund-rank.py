@@ -1,5 +1,7 @@
 # !/usr/bin/python 
 # -*- coding: utf-8 -*-
+# -*- coding: gdb -*-
+
 import time
 import datetime
 import glob
@@ -8,7 +10,7 @@ import json
 import sys
 import re
 
-# Ê¹ÓÃ·½·¨
+#Usage need to be redefine as input of the function
 def usage():
 	print 'fund-rank.py usage:'
 	print '\tpython fund.py start-date end-date fund-code=none\n'
@@ -20,7 +22,7 @@ def usage():
 	print '\teg:\tpython fund-rank.py 2017-03-01 2017-03-25'
 	print '\teg:\tpython fund-rank.py 2017-03-01 2017-03-25 377240'
 
-# »ñÈ¡Ä³Ò»»ù½ğÔÚÄ³Ò»ÈÕµÄÀÛ¼Æ¾»ÖµÊı¾İ
+#get the netvalue of a fund on a date
 def get_jingzhi(strfundcode, strdate):
 	try:
 		url = 'http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=' + \
@@ -45,7 +47,7 @@ def get_jingzhi(strfundcode, strdate):
 	tr_re = re.compile(r'<tr>(.*?)</tr>')
 	item_re = re.compile(r'''<td>(\d{4}-\d{2}-\d{2})</td><td.*?>(.*?)</td><td.*?>(.*?)</td><td.*?>(.*?)</td><td.*?>(.*?)</td><td.*?>(.*?)</td><td.*?></td>''', re.X)
 
-	# »ñÈ¡²»µ½ ·µ»Ø-1
+	# Error -1
 	jingzhi = '-1'
 	for line in tr_re.findall(json_fund_value):
 		#print line + '\n'
@@ -61,51 +63,54 @@ def get_jingzhi(strfundcode, strdate):
 			
 			if jingzhi2.strip() == '':
 				# 040028
-				# ¾»ÖµÈÕÆÚ	Ã¿Íò·İÊÕÒæ	7ÈÕÄê»¯ÊÕÒæÂÊ£¨%£©	Éê¹º×´Ì¬	Êê»Ø×´Ì¬	·ÖºìËÍÅä
-				# 2017-01-06	1.4414												ÔİÍ£Éê¹º	ÔİÍ£Êê»Ø	
-				# 2017-01-05	1.4369												ÔİÍ£Éê¹º	ÔİÍ£Êê»Ø	
+				# Date	ValuePerWan
+				# 2017-01-06	1.4414
+				# 2017-01-05	1.4369
 				jingzhi = '-1'
 			elif jingzhi2.find('%') > -1:
 				# 040003
-				# ¾»ÖµÈÕÆÚ	Ã¿Íò·İÊÕÒæ	7ÈÕÄê»¯ÊÕÒæÂÊ£¨%£©	Éê¹º×´Ì¬	Êê»Ø×´Ì¬	·ÖºìËÍÅä
-				# 2017-03-27	1.1149	3.9450%	ÏŞÖÆ´ó¶îÉê¹º	¿ª·ÅÊê»Ø	
-				# 2017-03-26*	2.2240	3.8970%	ÏŞÖÆ´ó¶îÉê¹º	¿ª·ÅÊê»Ø	
+				# Date          ValuePerWan 7DayInterest
+				# 2017-03-27	1.1149	3.9450%
+				# 2017-03-26*	2.2240	3.8970%
 				jingzhi = '-1'
 			elif float(jingzhi1) > float(jingzhi2):
 				# 502015
-				# ¾»ÖµÈÕÆÚ	µ¥Î»¾»Öµ	ÀÛ¼Æ¾»Öµ	ÈÕÔö³¤ÂÊ	Éê¹º×´Ì¬	Êê»Ø×´Ì¬	·ÖºìËÍÅä
-				# 2017-03-27	0.6980	0.3785	-2.24%	³¡ÄÚÂòÈë	³¡ÄÚÂô³ö	
-				# 2017-03-24	0.7140	0.3945	5.15%	³¡ÄÚÂòÈë	³¡ÄÚÂô³ö	
+				# Date          NetValue AccuNet DayIncrease Buy Sell Bonus
+				# 2017-03-27	0.6980	0.3785	-2.24%
+				# 2017-03-24	0.7140	0.3945	5.15%
 				jingzhi = entry[1]
 			else:
 				#
-				# ¾»ÖµÈÕÆÚ	µ¥Î»¾»Öµ	ÀÛ¼Æ¾»Öµ	ÈÕÔö³¤ÂÊ	Éê¹º×´Ì¬	Êê»Ø×´Ì¬	·ÖºìËÍÅä
-				# 2017-03-28	1.7720	1.7720	-0.23%	¿ª·ÅÉê¹º	¿ª·ÅÊê»Ø	
-				# 2017-03-27	1.7761	1.7761	-0.43%	¿ª·ÅÉê¹º	¿ª·ÅÊê»Ø	
+				# Date          NetValue AccuNet DayIncrease Buy Sell Bonus
+				# 2017-03-28	1.7720	1.7720	-0.23%
+				# 2017-03-27	1.7761	1.7761	-0.43%
 				jingzhi = entry[2]
 
 	return jingzhi
 	
 def main(argv):
-	# »ñÈ¡Ç°20¸ö
+	# Top 50
 	gettopnum = 50
 	
-	# 1¡¢²ÎÊı´¦Àí
+	# Usage Validation
 	#print sys.argv
-	if len(sys.argv) != 3 and len(sys.argv) != 4:
-		usage()
-		sys.exit(1)
+	#if len(sys.argv) != 3 and len(sys.argv) != 4:
+		#usage()
+		#sys.exit(1)
 	
-	# 1.1 ÆğÊ¼Ê±¼ä
-	strsdate = sys.argv[1]
-	stredate = sys.argv[2]
-	
-	# ½ñÈÕÁãÊ± 
+	# 1.1 Date
+	#strsdate = sys.argv[1]
+	#stredate = sys.argv[2]
+	strsdate = '2018-04-02'
+	stredate = '2018-04-03'
+
+
+	#Formulate the time
 	strtoday = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d')
 	tdatetime = datetime.datetime.strptime(strtoday, '%Y-%m-%d')
 	#print tdatetime
 	
-	# ¿ªÊ¼Ê±¼ä Èç¹ûÊÇÖÜÁù ÖÜÈÕ µ÷Õûµ½ÖÜÎå
+	# Adjust Start Time
 	#print strsdate
 	sdatetime = datetime.datetime.strptime(strsdate, '%Y-%m-%d')
 	sdatetime.isoweekday()
@@ -117,7 +122,7 @@ def main(argv):
 	strsdate = datetime.datetime.strftime(sdatetime, '%Y-%m-%d')
 	#print strsdate
 
-	# ½áÊøÊ±¼ä Èç¹ûÊÇÖÜÁù ÖÜÈÕ µ÷Õûµ½ÖÜÎå
+	# Adjust End Time
 	#print stredate
 	edatetime = datetime.datetime.strptime(stredate, '%Y-%m-%d')
 	edatetime.isoweekday()
@@ -129,17 +134,20 @@ def main(argv):
 	stredate = datetime.datetime.strftime(edatetime, '%Y-%m-%d')
 	#print stredate
 
-	# ÅĞ¶ÏÊ±¼ä¶Î ½ñÈÕ¾»ÖµÒªÏÂÎç²Å³ö Ò»ÂÉ²»´¦Àí
+	# Validate the Start time and End time
 	if edatetime <= sdatetime or tdatetime <= sdatetime or tdatetime <= edatetime:
 		print 'date input error!\n'
 		usage()
 		sys.exit(1)
 
 	
-	# 2 ¶Ôµ¥Ò»»ù½ğ½øĞĞ´¦Àí
-	if len(sys.argv) == 4:
-		strfundcode = sys.argv[3]
-		
+	# 2 Check the fund code
+	#if len(sys.argv) == 4:
+		#strfundcode = sys.argv[3]
+	#hard code here
+	if 1:
+		#hard code the fund code as GongYinHuShen
+		strfundcode = '481009'
 		jingzhimin = get_jingzhi(strfundcode, strsdate)
 		jingzhimax = get_jingzhi(strfundcode, stredate)
 		
@@ -152,19 +160,18 @@ def main(argv):
 		jingzhirise = float('%.2f' %(jingzhidif * 100 / float(jingzhimin)))
 	
 		print 'fund:' + strfundcode + '\n'
-		print strsdate + '\t' + stredate + '\t¾»Ôö³¤' + '\t' + 'Ôö³¤ÂÊ'
+		print strsdate + '\t' + stredate + '\tï¿½ï¿½ï¿½ï¿½ï¿½ï¿½' + '\t' + 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½'
 		print jingzhimin + '\t\t' + jingzhimax + '\t\t' + str(jingzhidif) + '\t' + str(jingzhirise) + '%'
 		sys.exit(0)
 	
 		
-	# 3¡¢»ñÈ¡»ù½ğÁĞ±í
-	#    Èç¹û´æÔÚÎÄ¼ş fundlist-*.txt ÎÄ¼ş£¬Ôò¶ÁÈ¡¸ÃÎÄ¼ş
-	#    Èç¹û¸ÃÎÄ¼ş²»´æÔÚ url»ñÈ¡ÁĞ±í È»ºó´æÎÄ¼ş
+	# 3Fetch the Fundlist
+
 	
 	fundlist_files = glob.glob('fundlist-*.txt')
 	if (len(fundlist_files) > 0) :
 		# print fundlist_files[0]
-		# ¶ÁÈ¡ÎÄ¼şÄÚÈİ
+		# read the funlist file
 		file_object = open(fundlist_files[0], 'r')
 		try:
 			all_funds_txt = file_object.read()
@@ -172,18 +179,17 @@ def main(argv):
 		finally:
 			file_object.close()
 	else:
-		# ´ÓÌìÌì»ù½ğÍø»ñÈ¡ËùÓĞ»ù½ğ
+		# get the funlist code from eastmoney
 		response_all_funds = urllib2.urlopen('http://fund.eastmoney.com/js/fundcode_search.js')
 		all_funds_txt = response_all_funds.read()
-		#´æÎÄ¼ş
+		#save the file
 		file_object = open('fundlist-' + strtoday + '.txt', 'w')
 		try:
 			file_object.write(all_funds_txt)
 			#print all_funds_txt
 		finally:
 			file_object.close()
-	
-	#´¦ÀíÊı¾İ ½«Æä×ª»¯Îªlist
+
 	all_funds_txt = all_funds_txt[all_funds_txt.find('=')+2:all_funds_txt.rfind(';')]
 	all_funds_list = json.loads(all_funds_txt.decode('utf-8'))
 	 
@@ -191,17 +197,17 @@ def main(argv):
 	print datetime.datetime.now()
 	print 'funds sum:' + str(len(all_funds_list))
 	
-	# 4 Ñ­»·´¦ÀíÃ¿¸ö»ù½ğ
+	# 4 Process each fund in the list
 	for fund in all_funds_list:
 		print 'process fund:\t' + fund[0].encode('gb18030') + '\t' + fund[2].encode('gb18030')
 		strfundcode = fund[0]
-		# »ñÈ¡¾»Öµ
+		# get the net value
 		jingzhimin = get_jingzhi(strfundcode, strsdate)
 		jingzhimax = get_jingzhi(strfundcode, stredate)
 		
 		if jingzhimin == '-1' or jingzhimax == '-1' or jingzhimin.strip() == '' or jingzhimax.strip() == '':
-			# ÓĞµÄ»ñÈ¡²»µ½ Èç 000002 »ªÏÄ³É³¤(ºó¶Ë) ÄÇ¾Í¶¼È¡0°É NND
-			# 040028  »ª°²ÔÂÔÂöÎ¶ÌÆÚÀí²ÆÕ®È¯A ÓĞ¿ÉÄÜÎª¿Õ
+			# Some fund cannot be get, set it zero, such as 000002
+			# 040028  maybe empty
 			jingzhimin = '0'
 			jingzhimax = '0'
 			jingzhidif = 0
@@ -213,37 +219,37 @@ def main(argv):
 			sys.exit(1)
 			'''
 		elif jingzhimin.find('%') > -1 or jingzhimax.find('%') > -1:
-			# »¹ÓĞÕâÖÖ NND 000037  ¹ã·¢Àí²Æ7ÌìÕ®È¯A
-			# ¾»ÖµÈÕÆÚ	Ã¿Íò·İÊÕÒæ	7ÈÕÄê»¯ÊÕÒæÂÊ£¨%£©	×î½üÔË×÷ÆÚÄê»¯ÊÕÒæÂÊ	Éê¹º×´Ì¬	Êê»Ø×´Ì¬	·ÖºìËÍÅä
-			# 2016-03-01	0.7740	2.7010%	2.7010%	ÏŞÖÆ´ó¶îÉê¹º	¿ª·ÅÊê»Ø	
+			# 000037
+			#
+			# 2016-03-01	0.7740	2.7010%	2.7010%
 			jingzhidif = 0
 			jingzhirise = 0
 		else:
-			# ¼ÆËãÔö³¤ÂÊ
+			# caculate
 			jingzhidif = float('%.4f' %(float(jingzhimax) - float(jingzhimin)))
 			jingzhirise = float('%.2f' %(jingzhidif * 100 / float(jingzhimin)))
 		
-		# ½«Êı¾İ¼ÓÈëµ½listÖĞ
+		# add in the list
 		fund.append(jingzhimin)
 		fund.append(jingzhimax)
 		fund.append(jingzhidif)
 		fund.append(jingzhirise)
 		
-		# ÊÇ·ñĞèÒª¿ØÖÆËÙ¶È
+		# speed control
 		#time.sleep(1)
 				
 		
-	# 5 ÅÅĞò Ğ´ÎÄ¼ş ´òÓ¡½á¹û
+	# 5 ï¿½ï¿½ï¿½ï¿½ Ğ´ï¿½Ä¼ï¿½ ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½
 	fileobject = open('result_' + strsdate + '_' + stredate + '.txt', 'w')
 	
-	# ¸ù¾İÔö³¤ÂÊÄæÅÅĞò
+	# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	all_funds_list.sort(key=lambda fund: fund[8],  reverse=True)
-	strhead =  'ÅÅĞò' + '\t' + '±àÂë' + '\t\t' + 'Ãû³Æ' + '\t\t' + 'ÀàĞÍ' + '\t\t' + \
-	strsdate + '\t' + stredate + '\t' + '¾»Ôö³¤' + '\t' + 'Ôö³¤ÂÊ' + '\n'
+	strhead =  'ï¿½ï¿½ï¿½ï¿½' + '\t' + 'ï¿½ï¿½ï¿½ï¿½' + '\t\t' + 'ï¿½ï¿½ï¿½ï¿½' + '\t\t' + 'ï¿½ï¿½ï¿½ï¿½' + '\t\t' + \
+	strsdate + '\t' + stredate + '\t' + 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½' + '\t' + 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½' + '\n'
 	print strhead
 	fileobject.write(strhead)
 	
-	# ´òÓ¡
+	# ï¿½ï¿½Ó¡
 	for index in range(len(all_funds_list)):
 		#print all_funds_list[index]
 		strcontent = str(index+1) + '\t' + all_funds_list[index][0].encode('gb18030') + '\t' + all_funds_list[index][2].encode('gb18030') + \
