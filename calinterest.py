@@ -13,10 +13,13 @@ import sqlite3
 import random
 import threading
 import os
+import getallfund
 
 returnvalue_info_list = ['Date', 'InvestRate', 'SellDate', 'SellNetValue', 'SellCost', 'SellTotalMoney', 'TotalInvestMoney']
 sellcost = 0.015
 buycost = 0.0012
+global_fundcode = '481009'
+
 
 lock = threading.Lock()
 class SQLiteWraper(object):
@@ -85,6 +88,7 @@ class SQLiteWraper(object):
 
 
 
+
 def trans_sdate2datetime(strdate):
 	sdatetime = datetime.datetime.strptime(strdate, '%Y-%m-%d')
 	return sdatetime
@@ -100,7 +104,7 @@ def time_cmp(first_time, second_time):
 
 def init_DB(fundcode):
 	dbname = fundcode + '.sqlite'
-	command = "create table if not exists fundvalue ( Date DATETIME primary key UNIQUE, NetValue FLOAT, AccuValue FLOAT, DayIncrease TEXT, Bonus FLOAT)"
+	command = "create table if not exists fundvalue ( Date TEXT primary key UNIQUE, NetValue FLOAT, AccuValue FLOAT, DayIncrease TEXT, Bonus FLOAT)"
 	db_fundcode = SQLiteWraper(dbname, command)
 	#print "DB init"
 	return db_fundcode
@@ -109,14 +113,14 @@ def init_DB(fundcode):
 def get_resulttablename(fundcode):
 	return 'returnrate'
 
-def init_ResultDB(fundcode):
-	dbname = fundcode + 'returnrate.sqlite'
-	if os.path.isfile(dbname):
-		os.remove(dbname)
-	command = "create table if not exists returnrate ( Date DATETIME primary key UNIQUE, InvestRate FLOAT, SellDate TEXT, SellNetValue FLOAT, " \
+def init_ResultDB(fundcode, period):
+	dbname = fundcode + '-' + str(period) + 'returnrate.sqlite'
+	#if os.path.isfile(dbname):
+		#os.remove(dbname)
+	command = "create table if not exists returnrate ( Date TEXT primary key UNIQUE, InvestRate FLOAT, SellDate TEXT, SellNetValue FLOAT, " \
 			  "SellCost FLOAT, SellTotalMoney FLOAT,  TotalInvestMoney FLOAT)"
 	db_fundcode = SQLiteWraper(dbname, command)
-	print "init_ResultDB init"
+	#print "init_ResultDB init"
 	return db_fundcode
 
 def gen_resultdb_insert_command(tablename, info_dict):
@@ -187,7 +191,7 @@ def cal_interest(fundcode, startdate, enddate, freq, money):
 			break
 
 		if itemnetvalue[4] != 0:
-			interest = numoffund * itemnetvalue[4]
+			interest += numoffund * itemnetvalue[4]
 	#print netvalue
 	#print numoffund
 	#print selldate
@@ -228,23 +232,9 @@ def construct_startdatelist(fundcode):
 		startdatelist.append(item[0])
 	return startdatelist
 
-def construct_startdatelisttest(fundcode):
-	startdatlist = []
-	startdatlist.append('2017-01-03')
-	startdatlist.append('2017-01-04')
-	return startdatlist
-
-
-
-def main(argv):
-	#hardcode for init test
-	fundcode = '481009'
-	startdate = '2017-01-03'
-	money = 100
-	periodtime = 365
-	freq = 7
-	#hardcode for test
-	resultDB = init_ResultDB(fundcode)
+def cal_returnvalue(fundcode = '481009', startdate = '2017-01-03', money = 1000, periodtime = 365, freq = 7):
+	print "cal_turenvalue " + ' ' + fundcode + ' ' + startdate + ' ' + str(periodtime) + ' ' + str(money) + ' ' + str(freq)
+	resultDB = init_ResultDB(fundcode, periodtime)
 	liststartdate = construct_startdatelist(fundcode)
 	for startdate in liststartdate:
 		print startdate
@@ -259,7 +249,61 @@ def main(argv):
 		command = gen_resultdb_insert_command(tablename, info_dict)
 		#print command
 		resultDB.execute(command, 1)
+	return
 
+def cal_possibility(fundcode,periodtime):
+	resultDB = init_ResultDB(fundcode, periodtime)
+	alldata = resultDB.fetchall("select * from returnrate")
+	numofalldata = len(alldata)
+	numofprofit = 0
+	numofmax3 = 0
+	numofmax7 = 0
+	for item in alldata:
+		#print item[1]
+		if item[1] > 1 :
+			numofprofit += 1
+		if item[1] > 1.3 :
+			numofmax3 += 1
+		if item[1] > 1.7 :
+			numofmax7 += 1
+	#print numofprofit
+	print (periodtime/365)
+	print float(numofprofit)/numofalldata
+	print float(numofmax3)/numofalldata
+	print float(numofmax7) / numofalldata
+	#print profitrate
+
+
+def batch_cal(fundcode):
+	#start date is no use, since start date is the date in the history net table
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365,     7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 2, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 3, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 4, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 5, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 6, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 7, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 8, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 9, 7)
+	cal_returnvalue(fundcode, '2017-01-03', 1000, 365 * 10, 7)
+
+def batch_cal_possibility(fundcode):
+	cal_possibility(fundcode, 365*2)
+	cal_possibility(fundcode, 365*3)
+	cal_possibility(fundcode, 365*4)
+	cal_possibility(fundcode, 365*5)
+	cal_possibility(fundcode, 365*6)
+	cal_possibility(fundcode, 365*7)
+	cal_possibility(fundcode, 365*8)
+	cal_possibility(fundcode, 365*9)
+	cal_possibility(fundcode, 365*10)
+
+#after import getallfund.py
+def main(argv):
+	getallfund.getallfund(global_fundcode)
+	batch_cal(global_fundcode)
+	#cal_possibility('481009', 365*2)
+	batch_cal_possibility(global_fundcode)
 	sys.exit(0)
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ import threading
 import os
 
 fund_info_list = ['Date', 'NetValue', 'AccuValue', 'DayIncrease', 'Bonus']
+#global_fundcode = '165309'
 
 lock = threading.Lock()
 class SQLiteWraper(object):
@@ -97,16 +98,7 @@ class SQLiteWraper(object):
 
 
 #Usage need to be redefine as input of the function
-def usage():
-	print 'fund-rank.py usage:'
-	print '\tpython fund.py start-date end-date fund-code=none\n'
-	print '\tdate format ****-**-**'
-	print '\t\tstart-date must before end-date'
-	print '\tfund-code default none'
-	print '\t\tif not input, get top 20 funds from all more than 6400 funds'
-	print '\t\telse get that fund\'s rate of rise\n'
-	print '\teg:\tpython fund-rank.py 2017-03-01 2017-03-25'
-	print '\teg:\tpython fund-rank.py 2017-03-01 2017-03-25 377240'
+
 
 
 def gen_fund_insert_command(tablename, info_dict):
@@ -236,9 +228,9 @@ def get_fundpage(db_fundcode,strfundcode = "000001",pagenum = 0, strsdate = "197
 	print curpage
 	return '-1'
 
-def get_funInfo(db_fundcode):
+def get_funInfo(db_fundcode, global_fundcode):
 	#hardcode test number
-	strfundcode = '481009'
+	strfundcode = global_fundcode
 	strsdate = '2009-03-04'
 	stredate = '2018-04-28'
 	pagenum = get_pagenum(strfundcode, strsdate, stredate)
@@ -247,14 +239,19 @@ def get_funInfo(db_fundcode):
 		pagenum = pagenum - 1
 	return '-1'
 
-def init_DB():
+def init_DB(global_fundcode):
 	print "start..."
-	if os.path.isfile("481009.sqlite"):
-		os.remove("481009.sqlite")
+	if os.path.isfile(global_fundcode + ".sqlite"):
+		os.remove(global_fundcode + ".sqlite")
 	command = "create table if not exists fundvalue ( Date TEXT primary key UNIQUE, NetValue FLOAT, AccuValue FLOAT, DayIncrease TEXT, Bonus FLOAT)"
-	db_fundcode = SQLiteWraper('481009.sqlite', command)
+	db_fundcode = SQLiteWraper(global_fundcode + '.sqlite', command)
 	print "DB created"
 	return db_fundcode
+
+def getallfund(global_fundcode):
+	db_fundcode = init_DB(global_fundcode)
+
+	get_funInfo(db_fundcode,global_fundcode)
 
 def main(argv):
 	db_fundcode = init_DB()

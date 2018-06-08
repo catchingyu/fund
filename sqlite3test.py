@@ -96,19 +96,6 @@ class SQLiteWraper(object):
 
 
 
-#Usage need to be redefine as input of the function
-def usage():
-	print 'fund-rank.py usage:'
-	print '\tpython fund.py start-date end-date fund-code=none\n'
-	print '\tdate format ****-**-**'
-	print '\t\tstart-date must before end-date'
-	print '\tfund-code default none'
-	print '\t\tif not input, get top 20 funds from all more than 6400 funds'
-	print '\t\telse get that fund\'s rate of rise\n'
-	print '\teg:\tpython fund-rank.py 2017-03-01 2017-03-25'
-	print '\teg:\tpython fund-rank.py 2017-03-01 2017-03-25 377240'
-
-
 def gen_fund_insert_command(tablename, info_dict):
 	"""
 	fund insert command
